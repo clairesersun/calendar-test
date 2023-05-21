@@ -12,10 +12,10 @@ const {google} = require('googleapis')
 const { OAuth2 } = google.auth
 
 const oAuth2Client = new OAuth2(clientID, clientSecret)
-// const oAuth2Client = new OAuth2("799665085151-npbmn489cjrl3tnpk9r7a7btc2ip9t8s.apps.googleusercontent.com", "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")
+
 
 oAuth2Client.setCredentials({refresh_token: refreshToken})
-// oAuth2Client.setCredentials({refresh_token: "1//045AbP5uOub6gCgYIARAAGAQSNwF-L9IrHLkb0l3LHAtmjJc1KpT7vwwUVpZT836RnhTM-dwbfCKVYkq3SSlPkdeu2RJiDsbqQv0"})
+
 
 const calendar = google.calendar({version: 'v3', auth: oAuth2Client})
 
@@ -81,3 +81,7 @@ calendar.events.insert({calendarId: 'primary', resource: event, conferenceDataVe
     if (err) return console.error("Calendar Event Creation Error: ", err)
     return console.log("Calendar Event Created.")
 })
+
+
+//TO DO: Add a visual element that takes in information via a form and adds to calendar
+//this is prob gonna be a html form that when utilized, it send the given data
