@@ -1,3 +1,14 @@
+## POC Blurb
+
+This app is my attempt at figuring out if I can write code to access and write Google information:
+
+- to create events
+- invite a minimum of two people (and have it appear in their google calendars)
+- generate and add Google Meet link
+- add notes (stretch goal)
+
+It is the main component of my application so determining the solution is imperative. I was able to write with js, but when I added react, I couldn't figure out how to do it.
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started

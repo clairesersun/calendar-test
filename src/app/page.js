@@ -1,203 +1,134 @@
-"use client"
-import styles from './page.module.css'
-import { useState } from 'react'
-import auth from '@/hooks/auth'
+"use client";
+import {
+  useSession,
+  useSupabaseClient,
+  useSessionContext,
+} from "@supabase/auth-helpers-react";
+import DateTimePicker from "react-datetime-picker";
+import { useState } from "react";
+import styles from "./page.module.css";
 
 
+export default function App() {
+  const [start, setStart] = useState(new Date());
+  const [end, setEnd] = useState(new Date());
+  const [eventName, setEventName] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [attendees, setAttendees] = useState("");
 
-export default function Home() {
-  const create = (e) => {
-    e.preventDefault()
-    console.log('creating')
-    auth()
-    
-    const calendar = google.calendar({version: 'v3', auth: oAuth2Client})
+  const session = useSession();
+  const supabase = useSupabaseClient();
+  const { isLoading } = useSessionContext();
 
-const event = {
-    //like the title
-    summary: summary,
-    location: null,
-    description: description,
-    start: {
-        dateTime: eventStartTime,
-        timeZone: 'America/New_York',
-
-    },
-    end: {
-        dateTime: eventEndTime,
-        timeZone: 'America/New_York',
-
-    },
-    colorId: 7,
-    //tried the following...
-    attendees: 
-    // you will need to run a check to ensure this is a correct email address as per https://datatracker.ietf.org/doc/html/rfc5322#section-3.4
-        [
-            //this will be the entered address
-            {email: attendees,
-        responseStatus: 'needsAction'
-    },
-    //this will be the business owners address
-    {email: 'readersheart@gmail.com',
-        responseStatus: 'accepted',
-        self: true
-    }
-],
-conferenceData: {
-        createRequest: {
-            conferenceSolutionKey: {type: 'hangoutsMeet'},
-            requestId: "some_random_string"
-            }
-                
-            }
-
-
-
-}
-
-        const {
-            summary: _,
-            ...otherFields
-          } =  calendar.events.insert({calendarId: 'primary', resource: event, conferenceDataVersion: 1}, err => {
-                if (err) return console.error("Calendar Event Creation Error: ", err)})
-                req.session.user = otherFields
-                return console.log("Calendar Event Created.")
+  if (isLoading) {
+    return <></>;
   }
-  //use form state??
-  const [summary, setSummary] = useState('')
-  const [description, setDescription] = useState('')
-  const [attendees, setAttendees] = useState('')
-  const [eventStartTime, setEventStartTime] = useState('')
-  const [eventEndTime, setEventEndTime] = useState('')
 
+  async function googleSignIn() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        scopes: "https://www.googleapis.com/auth/calendar",
+      },
+    });
+    if (error) {
+      alert("Error logging in to Google provider with Supabase");
+      console.log(error);
+    }
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+  }
+
+  async function createCalendarEvent() {
+    console.log("Creating calendar event");
+    const event = {
+      summary: eventName,
+      description: eventDescription,
+      start: {
+        dateTime: start.toISOString(), // Date.toISOString() ->
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      end: {
+        dateTime: end.toISOString(), // Date.toISOString() ->
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      attendees:
+        // you will need to run a check to ensure this is a correct email address as per https://datatracker.ietf.org/doc/html/rfc5322#section-3.4
+        [
+          //this will be the entered address
+          { email: attendees, responseStatus: "needsAction" },
+          //this will be the business owners address
+          {
+            email: "readersheart@gmail.com",
+            responseStatus: "accepted",
+            self: true,
+          },
+        ],
+      conferenceData: {
+        createRequest: {
+          conferenceSolutionKey: { type: "hangoutsMeet" },
+          requestId: "some_random_string",
+        },
+      },
+    };
+    await fetch(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + session.provider_token, // Access token for google
+        },
+        body: JSON.stringify(event),
+      }
+    )
+      .then((data) => {
+        return data.json();
+      })
+      .then((data) => {
+        console.log(data);
+        alert("Event created, check your Google Calendar!");
+      });
+  }
+
+  console.log(session);
+  console.log(start);
+  console.log(eventName);
+  console.log(eventDescription);
+  console.log(attendees);
   return (
-    <main className={styles.main}>
-      
-
-        <div className={styles.center}>
-        <form onSubmit={create} className={styles.card}>
-          {/* Summary */}
-          <label htmlFor='summary' >Summary</label>
-          <br />
-          <input type="text" id="summary" value={summary} onChange={e => setSummary(e.target.value)}></input>
-          <br />
-          {/* Description */}
-          
-          <label htmlFor='description'>Description</label>
-          <br />
-          <textarea type="text" id="description" value={description} onChange={e => setDescription(e.target.value)} />
-          <br />
-
-          <label htmlFor='attendees'>Attendees</label>
-          <br />
-          <input type="text" id="attendees" value={attendees} onChange={e => setAttendees(e.target.value)}></input>
-          <br />
-          {/* Event Start Time */}
-          <label htmlFor='eventStartTime'>Event Start Time</label>
-          <br />
-          <input type="datetime-local" id="eventStartTime" value={eventStartTime} onChange={e => setEventStartTime(e.target.value)}></input>
-          <br />
-          {/* Event End Time */}
-          <label htmlFor='eventEndTime'>Event End Time</label>
-          <br />
-          <input type="datetime-local" id="eventEndTime" value={eventEndTime} onChange={e => setEventEndTime(e.target.value)}></input>
-          <br />
-          <button type="submit">Create Event</button>
-
-        </form>
-        </div>
-
-      
-    </main>
-  )
+    <div className="App">
+      <div style={{ width: "400px", margin: "30px auto", backgroundColor: 'black'}}>
+        {session ? (
+          <>
+            <h2>Hey there {session.user.email}</h2>
+            <p>Start of your event</p>
+            <DateTimePicker onChange={setStart} value={start} />
+            <p>End of your event</p>
+            <DateTimePicker onChange={setEnd} value={end} />
+            <p>Event name</p>
+            <input type="text" onChange={(e) => setEventName(e.target.value)} />
+            <p>Event description</p>
+            <input
+              type="text"
+              onChange={(e) => setEventDescription(e.target.value)}
+            />
+            <p>Event attendees</p>
+            <input type="text" onChange={(e) => setAttendees(e.target.value)} />
+            <hr />
+            <button onClick={() => createCalendarEvent()}>
+              Create Calendar Event
+            </button>
+            <p></p>
+            <button onClick={() => signOut()}>Sign Out</button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => googleSignIn()}>Sign In With Google</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
-
-
-
-// require('dotenv').config(); 
-// //use following when building app
-// //if (process.env.NODE_ENV !== 'production') { 
-// //       require('dotenv').config(); 
-// // } 
-// const clientID = process.env.CLIENT_ID
-// const clientSecret = process.env.CLIENT_SECRET
-// const refreshToken = process.env.REFRESH_TOKEN
-
-// const {google} = require('googleapis')
-
-// const { OAuth2 } = google.auth
-
-// const oAuth2Client = new OAuth2(clientID, clientSecret)
-
-
-// oAuth2Client.setCredentials({refresh_token: refreshToken})
-
-
-// const calendar = google.calendar({version: 'v3', auth: oAuth2Client})
-
-// //This information will be recieved from a form
-// const eventStartTime = new Date()
-// // eventStartTime.setDate(eventStartTime.getDay() + 2)
-// //This information will be recieved from a form
-// const eventEndTime = new Date()
-// // eventEndTime.setDate(eventEndTime.getDay() + 2)
-// eventEndTime.setMinutes(eventEndTime.getMinutes() + 45)
-
-// // console.log(eventStartTime)
-
-// const event = {
-//     //like the title
-//     summary: 'Meeting w Marrissa',
-//     location: null,
-//     description: 'Meeting w Marissa to discuss the Personal Training Plan.',
-//     start: {
-//         dateTime: eventStartTime,
-//         timeZone: 'America/New_York',
-
-//     },
-//     end: {
-//         dateTime: eventEndTime,
-//         timeZone: 'America/New_York',
-
-//     },
-//     colorId: 7,
-//     //tried the following...
-//     attendees: 
-//     // you will need to run a check to ensure this is a correct email address as per https://datatracker.ietf.org/doc/html/rfc5322#section-3.4
-//         [
-//             //this will be the entered address
-//             {email: 'claire.sersun@gmail.com',
-//         responseStatus: 'needsAction'
-//     },
-//     //this will be the business owners address
-//     {email: 'readersheart@gmail.com',
-//         responseStatus: 'accepted',
-//         self: true
-//     }
-// ],
-// conferenceData: {
-//         createRequest: {
-//             conferenceSolutionKey: {type: 'hangoutsMeet'},
-//             requestId: "some_random_string"
-//             }
-                
-//             }
-
-
-
-// }
-
-
-// //database with schedule, whne its hit check if there is open time, reserve time slot, then send event in calendar <- this ensures no one is booking at the same time
-// //once someone books it must remove said date from calendar of available times
-
-// // console.log(event)
-
-// calendar.events.insert({calendarId: 'primary', resource: event, conferenceDataVersion: 1}, err => {
-//     if (err) return console.error("Calendar Event Creation Error: ", err)
-//     return console.log("Calendar Event Created.")
-// })
-
-
-// //TO DO: Add a visual element that takes in information via a form and adds to calendar
-// //this is prob gonna be a html form that when utilized, it send the given data
